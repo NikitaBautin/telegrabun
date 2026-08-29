@@ -1,8 +1,12 @@
 /**
  * Entry point for the Telegram Bot API schema generator.
  *
- * The parser and code generator are introduced alongside the first generated API surface.
- * Keeping this deterministic no-op in the scaffold makes the CI contract available now:
- * `check:generated` will fail as soon as a future generator leaves uncommitted output.
+ * Later tasks add overrides and code emitters. Parsing is already part of the
+ * deterministic generation boundary and reads only the checked-in snapshot.
  */
-console.info('Telegram schema generation has not been initialized yet.');
+import { parseCheckedInTelegramSchemaSnapshot } from './parser.ts';
+
+const ir = await parseCheckedInTelegramSchemaSnapshot();
+console.info(
+  `Parsed Telegram Bot API ${ir.apiVersion}: ${ir.objects.length} objects, ${ir.unions.length} unions, ${ir.methods.length} methods.`,
+);

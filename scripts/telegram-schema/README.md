@@ -11,11 +11,18 @@ bun run verify:telegram-schema
 ```
 
 The command deliberately does not fetch the network. To reproduce this exact input, check out
-the commit containing the snapshot and run the verification command. A future explicit schema
-update may download `https://core.telegram.org/bots/api`, replace the HTML snapshot, and update
-all corresponding metadata in the same commit.
+the commit containing the snapshot and run the verification command. To explicitly refresh the
+official source, run:
+
+```sh
+bun run update:telegram-schema
+```
+
+This is the only schema command that uses the network. It saves a versioned HTML file and updates
+the URL, retrieval date, announcement date, size, and checksum in the same change.
 
 ## Intermediate representation
 
-The parser emits the versioned, JSON-serializable [IR contract](./ir/README.md). Its edge-case
-fixture is intentionally independent of the full snapshot and is validated by the unit suite.
+`bun run generate` verifies and parses the snapshot into the versioned, JSON-serializable
+[IR contract](./ir/README.md), without writing code yet. Its edge-case fixture is intentionally
+independent of the full snapshot and is validated by the unit suite.

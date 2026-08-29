@@ -21,6 +21,10 @@ its source description and an explicit `required` boolean, including fields that
 required in Telegram prose. That prose is retained in `description`; no unsupported conditional
 constraint is silently invented by the parser.
 
+Some API headings have no prose paragraph at all. For those objects the parser records the explicit
+marker `Telegram does not provide a prose description for <Type>.` so the omission remains visible
+without violating the non-empty IR contract.
+
 Types are tagged JSON nodes. The supported nodes are `primitive` (`boolean`, `float`, `integer`,
 `string`, or `true`), `literal`, `reference`, `input-file`, `array`, and `union`. Arrays and unions
 nest recursively. Named unions may declare a `discriminator.field` when Telegram objects use a
