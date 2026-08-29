@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Validate the release gate or run the release flow from protected main.
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - release
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  dry-run:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run'
+    name: Release dry run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - run: bun install --frozen-lockfile
+      - run: bun run check:generated
+      - run: bun run check
+      - run: bun run pack:check
+
+  release:
+    if: >-
+      github.repository == 'NikitaBautin/telegrabun' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_protected &&
+      (github.event_name == 'push' || inputs.mode == 'release')
+    name: Create release PR or publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - run: bun install --frozen-lockfile
+      - run: bun run check:generated
+      - run: bun run check
+      - run: bun run pack:check
+      - id: changesets
+        uses: changesets/action@v2
+        with:
+          version-script: bun run version
+          publish-script: bun run release
+          commit-message: 'chore: release package version'
+          pr-title: 'chore: release package version'
+          pr-base-branch: main
+          create-github-releases: true
+          push-git-tags: true
