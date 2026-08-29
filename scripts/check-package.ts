@@ -3,15 +3,30 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const projectRoot = resolve(import.meta.dir, '..');
-const requiredPackageFiles = [
+const expectedPackageFiles = [
   'CHANGELOG.md',
   'LICENSE',
   'README.md',
+  'dist/index.d.ts.map',
   'dist/index.d.ts',
   'dist/index.js',
+  'dist/index.js.map',
   'package.json',
 ];
-const forbiddenPackagePrefixes = ['.changeset/', 'examples/', 'scripts/', 'src/', 'test/'];
+const expectedPackageMetadata = {
+  author: 'Nikita Bautin',
+  bugs: { url: 'https://github.com/NikitaBautin/telegrabun/issues' },
+  description: 'A type-safe, Bun-first Telegram Bot API library',
+  engines: { bun: '>=1.4.0' },
+  files: ['dist', 'README.md', 'CHANGELOG.md', 'LICENSE'],
+  homepage: 'https://github.com/NikitaBautin/telegrabun#readme',
+  keywords: ['bot', 'bun', 'telegram', 'telegram-bot', 'telegram-bot-api', 'typescript'],
+  name: 'telegrabun',
+  repository: {
+    type: 'git',
+    url: 'git+https://github.com/NikitaBautin/telegrabun.git',
+  },
+} as const;
 
 async function run(command: string[], cwd: string): Promise<void> {
   const child = Bun.spawn({ cmd: command, cwd, stderr: 'inherit', stdout: 'inherit' });
@@ -42,18 +57,50 @@ async function listArchiveFiles(archivePath: string): Promise<string[]> {
 }
 
 function assertPackageContents(files: string[]): void {
-  const missingFiles = requiredPackageFiles.filter((file) => !files.includes(file));
+  const unexpectedFiles = files.filter((file) => !expectedPackageFiles.includes(file));
+  const missingFiles = expectedPackageFiles.filter((file) => !files.includes(file));
 
-  if (missingFiles.length > 0) {
-    throw new Error(`Package tarball is missing: ${missingFiles.join(', ')}`);
+  if (missingFiles.length > 0 || unexpectedFiles.length > 0) {
+    throw new Error(
+      [
+        'Package tarball must contain exactly the expected files.',
+        missingFiles.length > 0 ? `Missing: ${missingFiles.join(', ')}.` : undefined,
+        unexpectedFiles.length > 0 ? `Unexpected: ${unexpectedFiles.join(', ')}.` : undefined,
+      ]
+        .filter((message): message is string => message !== undefined)
+        .join(' '),
+    );
+  }
+}
+
+async function readArchivePackageMetadata(archivePath: string): Promise<unknown> {
+  const child = Bun.spawn({
+    cmd: ['tar', '-xOzf', archivePath, 'package/package.json'],
+    stderr: 'inherit',
+    stdout: 'pipe',
+  });
+  const packageJson = await new Response(child.stdout).text();
+  const exitCode = await child.exited;
+
+  if (exitCode !== 0) {
+    throw new Error('Unable to read package.json from the package tarball.');
   }
 
-  const forbiddenFiles = files.filter((file) =>
-    forbiddenPackagePrefixes.some((prefix) => file.startsWith(prefix)),
+  return JSON.parse(packageJson) as unknown;
+}
+
+function assertPackageMetadata(metadata: unknown): void {
+  if (typeof metadata !== 'object' || metadata === null || Array.isArray(metadata)) {
+    throw new Error('Package tarball package.json must be an object.');
+  }
+
+  const packageMetadata = metadata as Record<string, unknown>;
+  const mismatches = Object.entries(expectedPackageMetadata).flatMap(([key, value]) =>
+    JSON.stringify(packageMetadata[key]) === JSON.stringify(value) ? [] : [key],
   );
 
-  if (forbiddenFiles.length > 0) {
-    throw new Error(`Package tarball contains development files: ${forbiddenFiles.join(', ')}`);
+  if (mismatches.length > 0) {
+    throw new Error(`Package tarball has invalid metadata: ${mismatches.join(', ')}.`);
   }
 }
 
@@ -100,6 +147,7 @@ try {
 
   const archivePath = await findArchive(temporaryDirectory);
   assertPackageContents(await listArchiveFiles(archivePath));
+  assertPackageMetadata(await readArchivePackageMetadata(archivePath));
 
   const smokeDirectory = join(temporaryDirectory, 'smoke');
   await mkdir(smokeDirectory);
