@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    "import/no-duplicates": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-explicit-any": "warn",
+    "unicorn/filename-case": "off"
+  },
+  "ignorePatterns": [".git/", ".husky/_/", "coverage/", "dist/", "node_modules/", "plans.md"]
+}
