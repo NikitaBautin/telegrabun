@@ -46,6 +46,7 @@ jobs:
       (github.event_name == 'push' || inputs.mode == 'release')
     name: Create release PR or publish
     runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: write
       id-token: write
@@ -55,6 +56,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.4.0'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
       - run: bun install --frozen-lockfile
       - run: bun run check:generated
       - run: bun run check

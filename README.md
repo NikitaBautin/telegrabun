@@ -67,6 +67,11 @@ Add a changeset for every user-visible change:
 bun run changeset
 ```
 
+The release workflow publishes through npm trusted publishing (OIDC), not a
+long-lived npm token. Maintainers should follow the [release security
+runbook](./docs/release-security.md) before the first publish and whenever
+release access changes.
+
 ## License
 
 [MIT](./LICENSE) © 2026 Nikita Bautin
