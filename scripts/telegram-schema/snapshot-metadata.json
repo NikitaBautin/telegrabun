@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "api": {
+    "version": "10.3",
+    "announcedAt": "2026-08-24"
+  },
+  "source": {
+    "url": "https://core.telegram.org/bots/api",
+    "retrievedAt": "2026-08-29"
+  },
+  "snapshot": {
+    "path": "snapshots/telegram-bot-api-10.3.html",
+    "sha256": "390de0ee903d0c6ad0c84c09ef03408aa509126c153a723cd26cb8c87c3b9056",
+    "bytes": 860074
+  }
+}

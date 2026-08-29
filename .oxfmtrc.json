@@ -9,5 +9,13 @@
   "quoteProps": "as-needed",
   "arrowParens": "always",
   "endOfLine": "lf",
-  "ignorePatterns": [".git/", ".husky/_/", "coverage/", "dist/", "node_modules/", "plans.md"]
+  "ignorePatterns": [
+    ".git/",
+    ".husky/_/",
+    "coverage/",
+    "dist/",
+    "node_modules/",
+    "plans.md",
+    "scripts/telegram-schema/snapshots/"
+  ]
 }

@@ -53,6 +53,7 @@
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "generate": "bun run scripts/telegram-schema/generate.ts",
+    "verify:telegram-schema": "bun run scripts/telegram-schema/verify-snapshot.ts",
     "check:generated": "bun run generate && git diff --exit-code",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build",
     "pack:check": "bun run scripts/check-package.ts",
