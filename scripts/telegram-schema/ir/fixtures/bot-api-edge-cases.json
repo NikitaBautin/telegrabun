@@ -1,0 +1,258 @@
+{
+  "formatVersion": 1,
+  "apiVersion": "10.3",
+  "objects": [
+    {
+      "name": "User",
+      "description": "This object represents a Telegram user or bot.",
+      "fields": [
+        {
+          "name": "id",
+          "description": "Unique identifier for this user.",
+          "required": true,
+          "type": { "kind": "primitive", "name": "integer" }
+        },
+        {
+          "name": "username",
+          "description": "Optional username of the user.",
+          "required": false,
+          "type": { "kind": "primitive", "name": "string" }
+        }
+      ]
+    },
+    {
+      "name": "Message",
+      "description": "This object represents a message.",
+      "fields": [
+        {
+          "name": "message_id",
+          "description": "Unique message identifier.",
+          "required": true,
+          "type": { "kind": "primitive", "name": "integer" }
+        },
+        {
+          "name": "caption",
+          "description": "Optional caption for the message.",
+          "required": false,
+          "type": { "kind": "primitive", "name": "string" }
+        }
+      ]
+    },
+    {
+      "name": "InputMediaPhoto",
+      "description": "Represents a photo to be sent in an album.",
+      "fields": [
+        {
+          "name": "type",
+          "description": "Type of the result, must be photo.",
+          "required": true,
+          "type": { "kind": "literal", "value": "photo" }
+        },
+        {
+          "name": "media",
+          "description": "File to send. Pass a file_id, URL, or a new file upload.",
+          "required": true,
+          "type": {
+            "kind": "union",
+            "members": [{ "kind": "input-file" }, { "kind": "primitive", "name": "string" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "InputMediaVideo",
+      "description": "Represents a video to be sent in an album.",
+      "fields": [
+        {
+          "name": "type",
+          "description": "Type of the result, must be video.",
+          "required": true,
+          "type": { "kind": "literal", "value": "video" }
+        },
+        {
+          "name": "media",
+          "description": "File to send. Pass a file_id, URL, or a new file upload.",
+          "required": true,
+          "type": {
+            "kind": "union",
+            "members": [{ "kind": "input-file" }, { "kind": "primitive", "name": "string" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ChatMemberOwner",
+      "description": "Represents the owner of a chat.",
+      "fields": [
+        {
+          "name": "status",
+          "description": "The member's status in the chat, always creator.",
+          "required": true,
+          "type": { "kind": "literal", "value": "creator" }
+        }
+      ]
+    },
+    {
+      "name": "ChatMemberAdministrator",
+      "description": "Represents a chat administrator.",
+      "fields": [
+        {
+          "name": "status",
+          "description": "The member's status in the chat, always administrator.",
+          "required": true,
+          "type": { "kind": "literal", "value": "administrator" }
+        }
+      ]
+    }
+  ],
+  "unions": [
+    {
+      "name": "InputMedia",
+      "description": "This object represents the content of a media message to be sent.",
+      "members": [
+        { "kind": "reference", "name": "InputMediaPhoto" },
+        { "kind": "reference", "name": "InputMediaVideo" }
+      ],
+      "discriminator": { "field": "type" }
+    },
+    {
+      "name": "ChatMember",
+      "description": "This object contains information about one member of a chat.",
+      "members": [
+        { "kind": "reference", "name": "ChatMemberOwner" },
+        { "kind": "reference", "name": "ChatMemberAdministrator" }
+      ],
+      "discriminator": { "field": "status" }
+    }
+  ],
+  "methods": [
+    {
+      "name": "getMe",
+      "description": "A simple method for testing your bot's authentication token.",
+      "parameters": [],
+      "result": { "kind": "reference", "name": "User" }
+    },
+    {
+      "name": "close",
+      "description": "Use this method to close the bot instance before moving it.",
+      "parameters": [],
+      "result": { "kind": "primitive", "name": "true" }
+    },
+    {
+      "name": "sendMessage",
+      "description": "Use this method to send text messages.",
+      "parameters": [
+        {
+          "name": "chat_id",
+          "description": "Unique identifier for the target chat or username of the target channel.",
+          "required": true,
+          "type": {
+            "kind": "union",
+            "members": [
+              { "kind": "primitive", "name": "integer" },
+              { "kind": "primitive", "name": "string" }
+            ]
+          }
+        },
+        {
+          "name": "text",
+          "description": "Text of the message to be sent.",
+          "required": true,
+          "type": { "kind": "primitive", "name": "string" }
+        }
+      ],
+      "result": { "kind": "reference", "name": "Message" }
+    },
+    {
+      "name": "sendDocument",
+      "description": "Use this method to send general files.",
+      "parameters": [
+        {
+          "name": "chat_id",
+          "description": "Unique identifier for the target chat.",
+          "required": true,
+          "type": {
+            "kind": "union",
+            "members": [
+              { "kind": "primitive", "name": "integer" },
+              { "kind": "primitive", "name": "string" }
+            ]
+          }
+        },
+        {
+          "name": "document",
+          "description": "File to send. Pass a file_id, URL, or a new file upload.",
+          "required": true,
+          "type": {
+            "kind": "union",
+            "members": [{ "kind": "input-file" }, { "kind": "primitive", "name": "string" }]
+          }
+        },
+        {
+          "name": "thumbnail",
+          "description": "Optional thumbnail of the file sent.",
+          "required": false,
+          "type": { "kind": "input-file" }
+        }
+      ],
+      "result": { "kind": "reference", "name": "Message" }
+    },
+    {
+      "name": "sendMediaGroup",
+      "description": "Use this method to send a group of photos or videos as an album.",
+      "parameters": [
+        {
+          "name": "media",
+          "description": "A JSON-serialized array describing messages to be sent.",
+          "required": true,
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "union",
+              "members": [
+                { "kind": "reference", "name": "InputMedia" },
+                { "kind": "reference", "name": "Message" }
+              ]
+            }
+          }
+        }
+      ],
+      "result": {
+        "kind": "array",
+        "element": { "kind": "reference", "name": "Message" }
+      }
+    },
+    {
+      "name": "exportChatInviteLink",
+      "description": "Use this method to export an invite link to a supergroup or channel.",
+      "parameters": [
+        {
+          "name": "chat_id",
+          "description": "Unique identifier for the target chat.",
+          "required": true,
+          "type": { "kind": "primitive", "name": "integer" }
+        }
+      ],
+      "result": { "kind": "primitive", "name": "string" }
+    },
+    {
+      "name": "setGameScore",
+      "description": "Use this method to set the score of the specified user in a game.",
+      "parameters": [
+        {
+          "name": "user_id",
+          "description": "User identifier.",
+          "required": true,
+          "type": { "kind": "primitive", "name": "integer" }
+        }
+      ],
+      "result": {
+        "kind": "union",
+        "members": [
+          { "kind": "reference", "name": "Message" },
+          { "kind": "primitive", "name": "true" }
+        ]
+      }
+    }
+  ]
+}

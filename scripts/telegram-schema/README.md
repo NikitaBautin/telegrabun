@@ -14,3 +14,8 @@ The command deliberately does not fetch the network. To reproduce this exact inp
 the commit containing the snapshot and run the verification command. A future explicit schema
 update may download `https://core.telegram.org/bots/api`, replace the HTML snapshot, and update
 all corresponding metadata in the same commit.
+
+## Intermediate representation
+
+The parser emits the versioned, JSON-serializable [IR contract](./ir/README.md). Its edge-case
+fixture is intentionally independent of the full snapshot and is validated by the unit suite.
