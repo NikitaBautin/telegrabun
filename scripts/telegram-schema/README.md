@@ -24,5 +24,31 @@ the URL, retrieval date, announcement date, size, and checksum in the same chang
 ## Intermediate representation
 
 `bun run generate` verifies and parses the snapshot into the versioned, JSON-serializable
-[IR contract](./ir/README.md), without writing code yet. Its edge-case fixture is intentionally
+[IR contract](./ir/README.md), then applies the version-matched document in
+[`overrides/`](./overrides/), without writing code yet. Its edge-case fixture is intentionally
 independent of the full snapshot and is validated by the unit suite.
+
+## Manual overrides
+
+Telegram documentation occasionally needs a correction that cannot be inferred safely from its
+HTML. `overrides/telegram-bot-api-<version>.json` is the small, versioned place for that input:
+
+```json
+{
+  "formatVersion": 1,
+  "irFormatVersion": 1,
+  "apiVersion": "10.3",
+  "overrides": [
+    {
+      "path": "/objects/Example/fields/value",
+      "patch": { "required": true }
+    }
+  ]
+}
+```
+
+Paths are name-based and may select only an existing IR object (`/objects/<Object>`), its field
+(`.../fields/<field>`), union (`/unions/<Union>`), or method (`/methods/<method>`). Patches can
+replace only documented properties for that node. The full patched IR is validated again, and
+generation reports every applied path. This makes a stale override fail loudly after a snapshot
+update instead of silently adding schema data.
