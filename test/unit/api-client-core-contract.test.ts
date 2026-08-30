@@ -80,3 +80,68 @@ test('ApiClientCore deserializes transport results to the public API shape', asy
     isBot: true,
   });
 });
+
+test('ApiClientCore does not mutate reused public parameters', async () => {
+  const calls: Array<{ method: string; params: Readonly<Record<string, unknown>> }> = [];
+  const transport: TelegramTransport = {
+    async call(method, params) {
+      calls.push({ method, params });
+      return {};
+    },
+  };
+  const params = {
+    chatId: 42,
+    replyMarkup: {
+      inlineKeyboard: [[{ callbackData: 'confirm', text: 'Confirm' }]],
+    },
+    text: 'Continue?',
+  } satisfies ApiMethodParams<'sendMessage'>;
+  const originalParams = structuredClone(params);
+  const core = new ApiClientCore(transport);
+
+  await core.call('sendMessage', params);
+  await core.call('sendMessage', params);
+
+  expect(params).toEqual(originalParams);
+  expect(calls).toEqual([
+    {
+      method: 'sendMessage',
+      params: {
+        chat_id: 42,
+        reply_markup: {
+          inline_keyboard: [[{ callback_data: 'confirm', text: 'Confirm' }]],
+        },
+        text: 'Continue?',
+      },
+    },
+    {
+      method: 'sendMessage',
+      params: {
+        chat_id: 42,
+        reply_markup: {
+          inline_keyboard: [[{ callback_data: 'confirm', text: 'Confirm' }]],
+        },
+        text: 'Continue?',
+      },
+    },
+  ]);
+});
+
+test('ApiClientCore does not mutate a fake transport result', async () => {
+  const wireResult = { first_name: 'Ada', id: 42, is_bot: true };
+  const originalWireResult = structuredClone(wireResult);
+  const transport: TelegramTransport = {
+    async call() {
+      return wireResult;
+    },
+  };
+  const core = new ApiClientCore(transport);
+
+  await expect(core.call('getMe', {})).resolves.toEqual({
+    firstName: 'Ada',
+    id: 42,
+    isBot: true,
+  });
+
+  expect(wireResult).toEqual(originalWireResult);
+});
