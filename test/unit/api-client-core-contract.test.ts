@@ -29,6 +29,23 @@ void (true satisfies Equal<ApiClientCore['call'], ExpectedCall>);
 void (true satisfies ApiClientCore['call'] extends GetMeCall ? true : false);
 void (true satisfies ApiClientCore['call'] extends SendMessageCall ? true : false);
 
+function assertTypedCoreCalls(typedCore: ApiClientCore): void {
+  const typedGetMeResult: Promise<User> = typedCore.call('getMe', {});
+  const typedSendMessageResult: Promise<Message> = typedCore.call('sendMessage', {
+    chatId: 42,
+    text: 'Hello',
+  });
+  void typedGetMeResult;
+  void typedSendMessageResult;
+
+  // @ts-expect-error sendMessage requires text.
+  void typedCore.call('sendMessage', { chatId: 42 });
+
+  // @ts-expect-error Typed core accepts public camelCase parameters, not wire keys.
+  void typedCore.call('sendMessage', { chat_id: 42, text: 'Hello' });
+}
+void assertTypedCoreCalls;
+
 test('ApiClientCore contract is available for the generated API facade', () => {
   expect(true).toBe(true);
 });
