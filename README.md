@@ -2,12 +2,13 @@
 
 A type-safe, Bun-first library for building Telegram bots with the Telegram Bot API.
 
-> **Status:** `0.1.0` is the project scaffold. The public `Bot` API, generated Bot API
-> types, polling, webhooks, and file uploads are under active development and are not yet
-> available in a release.
+> **Status:** `0.1.0` is the project scaffold. The generated, typed low-level `Api` façade
+> and its transport contract are available; the public `Bot` API, polling, webhooks, and file
+> uploads are still under active development.
 
-The only current export is the package `version`; it is provided for build and integration
-checks rather than as the finished bot API.
+The package exports `Api` at runtime, plus generated public types and the `TelegramTransport`
+contract for composing a transport implementation. `version` remains available for build and
+integration checks.
 
 ## Requirements
 

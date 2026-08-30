@@ -7,10 +7,24 @@ const expectedPackageFiles = [
   'CHANGELOG.md',
   'LICENSE',
   'README.md',
+  'dist/api/client-core.d.ts.map',
+  'dist/api/client-core.d.ts',
+  'dist/api/serializer.d.ts.map',
+  'dist/api/serializer.d.ts',
+  'dist/generated/client.d.ts.map',
+  'dist/generated/client.d.ts',
+  'dist/generated/metadata.d.ts.map',
+  'dist/generated/metadata.d.ts',
+  'dist/generated/public.d.ts.map',
+  'dist/generated/public.d.ts',
+  'dist/generated/wire.d.ts.map',
+  'dist/generated/wire.d.ts',
   'dist/index.d.ts.map',
   'dist/index.d.ts',
   'dist/index.js',
   'dist/index.js.map',
+  'dist/transport/telegram-transport.d.ts.map',
+  'dist/transport/telegram-transport.d.ts',
   'package.json',
 ];
 const expectedPackageMetadata = {
@@ -128,8 +142,41 @@ async function smokeTest(archivePath: string, directory: string): Promise<void> 
       2,
     ),
   );
-  await Bun.write(join(directory, 'smoke.js'), "import 'telegrabun';\n");
-  await Bun.write(join(directory, 'smoke.ts'), "import 'telegrabun';\n");
+  const smokeProgram = `
+import { Api } from 'telegrabun';
+
+const api = new Api({
+  async call() {
+    return { first_name: 'Ada', id: 42, is_bot: true };
+  },
+});
+const user = await api.getMe();
+
+if (user.firstName !== 'Ada') {
+  throw new Error('Public Api smoke test returned an unexpected result.');
+}
+`;
+  await Bun.write(join(directory, 'smoke.js'), smokeProgram);
+  await Bun.write(
+    join(directory, 'smoke.ts'),
+    `
+import { Api, type SendMessageParams, type TelegramTransport } from 'telegrabun';
+
+const transport: TelegramTransport = {
+  async call() {
+    return { first_name: 'Ada', id: 42, is_bot: true };
+  },
+};
+const api = new Api(transport);
+const params: SendMessageParams = { chatId: 42, text: 'Hello' };
+const user = await api.getMe();
+
+void params;
+if (user.firstName !== 'Ada') {
+  throw new Error('Public Api smoke test returned an unexpected result.');
+}
+`,
+  );
 
   await run(['bun', 'install', '--ignore-scripts'], directory);
   await run(['bun', 'run', 'smoke.js'], directory);

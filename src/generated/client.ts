@@ -5,14 +5,16 @@
 
 import { ApiClientCore } from '../api/client-core.ts';
 
+import type { TelegramTransport } from '../transport/telegram-transport.ts';
+
 import type * as Public from './public.ts';
 
-/** Named, type-safe Telegram Bot API methods backed by ApiClientCore. */
+/** Named, type-safe Telegram Bot API methods backed by a Telegram transport. */
 export class Api {
   readonly #core: ApiClientCore;
 
-  constructor(core: ApiClientCore) {
-    this.#core = core;
+  constructor(transport: TelegramTransport) {
+    this.#core = new ApiClientCore(transport);
   }
 
   getUpdates(params: Public.GetUpdatesParams = {}): Promise<Public.GetUpdatesResult> {

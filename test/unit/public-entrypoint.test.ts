@@ -23,11 +23,13 @@ const transport: TelegramTransport = {
     return {};
   },
 };
+const api = new Api(transport);
 const method = 'getMe' satisfies ApiMethodName;
 const params = {} satisfies ApiMethodParams<typeof method>;
 const user: ApiMethodResult<typeof method> = { firstName: 'Ada', id: 42, isBot: true };
 
 void transport;
+void api;
 void params;
 void user;
 

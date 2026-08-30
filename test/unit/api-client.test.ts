@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test';
 
-import { ApiClientCore } from '../../src/api/client-core.ts';
 import { Api } from '../../src/generated/client.ts';
 import type { Message, User } from '../../src/generated/public.ts';
 import type { TelegramTransport } from '../../src/transport/telegram-transport.ts';
@@ -36,10 +35,10 @@ test('generated Api delegates named methods to ApiClientCore', async () => {
           };
     },
   };
-  const api = new Api(new ApiClientCore(transport));
+  const api = new Api(transport);
 
-  await expect(api.getMe()).resolves.toEqual({ firstName: 'Ada', id: 42, isBot: true });
-  await expect(api.sendMessage({ chatId: 42, text: 'Hello' })).resolves.toMatchObject({
+  expect(api.getMe()).resolves.toEqual({ firstName: 'Ada', id: 42, isBot: true });
+  expect(api.sendMessage({ chatId: 42, text: 'Hello' })).resolves.toMatchObject({
     messageId: 99,
     text: 'Hello',
   });
@@ -58,7 +57,7 @@ test('generated Api supplies an empty object for all-optional method parameters'
       return [];
     },
   };
-  const api = new Api(new ApiClientCore(transport));
+  const api = new Api(transport);
 
   await api.getUpdates();
   await api.getUpdates({ limit: 10 });

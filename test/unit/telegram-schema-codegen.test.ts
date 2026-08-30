@@ -71,7 +71,12 @@ test('API client generator emits named methods with ergonomic parameter signatur
   const generatedClient = generateTelegramApiClient(ir);
 
   expect(generatedClient).toContain("import { ApiClientCore } from '../api/client-core.ts';");
+  expect(generatedClient).toContain(
+    "import type { TelegramTransport } from '../transport/telegram-transport.ts';",
+  );
   expect(generatedClient).toContain('export class Api {');
+  expect(generatedClient).toContain('constructor(transport: TelegramTransport) {');
+  expect(generatedClient).toContain('this.#core = new ApiClientCore(transport);');
   expect(generatedClient).toContain('getMe(): Promise<Public.GetMeResult> {');
   expect(generatedClient).toContain("return this.#core.call('getMe', {});");
   expect(generatedClient).toContain(
