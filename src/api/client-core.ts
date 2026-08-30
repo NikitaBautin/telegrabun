@@ -1,3 +1,4 @@
+import { serializeApiMethodParams } from './serializer.ts';
 import type { ApiMethodName, ApiMethodParams, ApiMethodResult } from '../generated/public.ts';
 import type { TelegramTransport } from '../transport/telegram-transport.ts';
 
@@ -12,11 +13,19 @@ import type { TelegramTransport } from '../transport/telegram-transport.ts';
  *
  * The runtime implementation is introduced in R020-10.2.3 through R020-10.2.7.
  */
-export declare class ApiClientCore {
-  constructor(transport: TelegramTransport);
+export class ApiClientCore {
+  readonly #transport: TelegramTransport;
 
-  call<Method extends ApiMethodName>(
+  constructor(transport: TelegramTransport) {
+    this.#transport = transport;
+  }
+
+  async call<Method extends ApiMethodName>(
     method: Method,
     params: ApiMethodParams<Method>,
-  ): Promise<ApiMethodResult<Method>>;
+  ): Promise<ApiMethodResult<Method>> {
+    const wireParams = serializeApiMethodParams(method, params);
+
+    return (await this.#transport.call(method, wireParams)) as ApiMethodResult<Method>;
+  }
 }

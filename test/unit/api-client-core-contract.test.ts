@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 
-import type { ApiClientCore } from '../../src/api/client-core.ts';
+import { ApiClientCore } from '../../src/api/client-core.ts';
 import type {
   ApiMethodName,
   ApiMethodParams,
@@ -8,6 +8,7 @@ import type {
   Message,
   User,
 } from '../../src/generated/public.ts';
+import type { TelegramTransport } from '../../src/transport/telegram-transport.ts';
 type Equal<Actual, Expected> =
   (<Value>() => Value extends Actual ? 1 : 2) extends <Value>() => Value extends Expected ? 1 : 2
     ? true
@@ -29,4 +30,37 @@ void (true satisfies ApiClientCore['call'] extends SendMessageCall ? true : fals
 
 test('ApiClientCore contract is available for the generated API facade', () => {
   expect(true).toBe(true);
+});
+
+test('ApiClientCore serializes public parameters before delegating to transport', async () => {
+  const calls: Array<{ method: string; params: Readonly<Record<string, unknown>> }> = [];
+  const transport: TelegramTransport = {
+    async call(method, params) {
+      calls.push({ method, params });
+      return {};
+    },
+  };
+
+  const core = new ApiClientCore(transport);
+
+  await core.call('sendMessage', {
+    chatId: 42,
+    replyMarkup: {
+      inlineKeyboard: [[{ callbackData: 'confirm', text: 'Confirm' }]],
+    },
+    text: 'Continue?',
+  });
+
+  expect(calls).toEqual([
+    {
+      method: 'sendMessage',
+      params: {
+        chat_id: 42,
+        reply_markup: {
+          inline_keyboard: [[{ callback_data: 'confirm', text: 'Confirm' }]],
+        },
+        text: 'Continue?',
+      },
+    },
+  ]);
 });
