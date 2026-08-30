@@ -55,7 +55,7 @@
     "generate": "bun run scripts/telegram-schema/generate.ts",
     "update:telegram-schema": "bun run scripts/telegram-schema/update-snapshot.ts",
     "verify:telegram-schema": "bun run scripts/telegram-schema/verify-snapshot.ts",
-    "check:generated": "bun run generate && git diff --exit-code",
+    "check:generated": "bun run scripts/telegram-schema/check-generated.ts",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build",
     "pack:check": "bun run scripts/check-package.ts",
     "changeset": "changeset",

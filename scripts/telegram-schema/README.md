@@ -33,6 +33,9 @@ Runtime metadata records verified snapshot provenance, public/wire field names, 
 trees, and potential `InputFile` attachments without performing work on import. Its edge-case
 fixture is intentionally independent of the full snapshot and is validated by the unit suite.
 
+`bun run check:generated` runs that same pipeline and fails if it changes any checked-in file
+under `src/generated/`. CI runs this command before the full quality gate.
+
 ## Manual overrides
 
 Telegram documentation occasionally needs a correction that cannot be inferred safely from its

@@ -8,6 +8,7 @@ import {
   generateTelegramRuntimeMetadata,
   generateTelegramWireTypes,
 } from '../../scripts/telegram-schema/codegen.ts';
+import { generateTelegramSchema } from '../../scripts/telegram-schema/generate.ts';
 import { parseTelegramSchemaIr } from '../../scripts/telegram-schema/ir.ts';
 import {
   applyTelegramSchemaOverrides,
@@ -156,14 +157,38 @@ test('the checked-in generated wire types are exactly reproducible from the patc
   }
 });
 
+test('the complete generator pipeline is idempotent', async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), 'telegrabun-schema-generation-'));
+
+  await generateTelegramSchema({ outputDirectory });
+  const firstGeneration = await readGeneratedArtifacts(outputDirectory);
+
+  await generateTelegramSchema({ outputDirectory });
+  expect(await readGeneratedArtifacts(outputDirectory)).toEqual(firstGeneration);
+});
+
+async function readGeneratedArtifacts(directory: string): Promise<Record<string, string>> {
+  return Object.fromEntries(
+    await Promise.all(
+      ['wire.ts', 'public.ts', 'metadata.ts'].map(async (name) => [
+        name,
+        await Bun.file(join(directory, name)).text(),
+      ]),
+    ),
+  );
+}
+
 async function formatGeneratedWireTypes(source: string): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'telegrabun-wire-types-'));
   const path = join(directory, 'wire.ts');
   await Bun.write(path, source);
-  const formatter = Bun.spawn(['bunx', 'oxfmt', '--write', path], {
-    stderr: 'inherit',
-    stdout: 'inherit',
-  });
+  const formatter = Bun.spawn(
+    ['bunx', 'oxfmt', '--config', join(import.meta.dir, '../../.oxfmtrc.json'), '--write', path],
+    {
+      stderr: 'inherit',
+      stdout: 'inherit',
+    },
+  );
 
   expect(await formatter.exited).toBe(0);
   return Bun.file(path).text();
