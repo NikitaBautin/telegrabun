@@ -66,19 +66,23 @@ test('ApiClientCore serializes public parameters before delegating to transport'
 });
 
 test('ApiClientCore deserializes transport results to the public API shape', async () => {
+  const calls: Array<{ method: string; params: Readonly<Record<string, unknown>> }> = [];
   const transport: TelegramTransport = {
-    async call() {
+    async call(method, params) {
+      calls.push({ method, params });
       return { first_name: 'Ada', id: 42, is_bot: true };
     },
   };
 
   const core = new ApiClientCore(transport);
 
-  expect(core.call('getMe', {})).resolves.toEqual({
+  await expect(core.call('getMe', {})).resolves.toEqual({
     firstName: 'Ada',
     id: 42,
     isBot: true,
   });
+
+  expect(calls).toEqual([{ method: 'getMe', params: {} }]);
 });
 
 test('ApiClientCore does not mutate reused public parameters', async () => {
