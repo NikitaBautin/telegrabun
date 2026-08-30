@@ -6,16 +6,27 @@
  */
 import { join } from 'node:path';
 
+import { generateTelegramWireTypes } from './codegen.ts';
 import { applyTelegramSchemaOverrides, loadTelegramSchemaOverrides } from './overrides.ts';
 import { parseCheckedInTelegramSchemaSnapshot } from './parser.ts';
 
 const ir = await parseCheckedInTelegramSchemaSnapshot();
 const overridesPath = join(import.meta.dir, 'overrides', `telegram-bot-api-${ir.apiVersion}.json`);
 const result = applyTelegramSchemaOverrides(ir, await loadTelegramSchemaOverrides(overridesPath));
+const generatedWireTypesPath = join(import.meta.dir, '../../src/generated/wire.ts');
+
+await Bun.write(generatedWireTypesPath, generateTelegramWireTypes(result.ir));
+const formatter = Bun.spawn(['bunx', 'oxfmt', '--write', generatedWireTypesPath], {
+  stderr: 'inherit',
+  stdout: 'inherit',
+});
+if ((await formatter.exited) !== 0) {
+  throw new Error(`Could not format generated wire types at ${generatedWireTypesPath}.`);
+}
 
 for (const application of result.applications) {
   console.info(`Applied override ${application.path}: ${application.properties.join(', ')}.`);
 }
 console.info(
-  `Parsed Telegram Bot API ${result.ir.apiVersion}: ${result.ir.objects.length} objects, ${result.ir.unions.length} unions, ${result.ir.methods.length} methods; ${result.applications.length} overrides applied.`,
+  `Generated wire types for Telegram Bot API ${result.ir.apiVersion}: ${result.ir.objects.length} objects, ${result.ir.unions.length} unions, ${result.ir.methods.length} methods; ${result.applications.length} overrides applied.`,
 );

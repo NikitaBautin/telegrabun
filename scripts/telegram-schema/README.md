@@ -24,9 +24,11 @@ the URL, retrieval date, announcement date, size, and checksum in the same chang
 ## Intermediate representation
 
 `bun run generate` verifies and parses the snapshot into the versioned, JSON-serializable
-[IR contract](./ir/README.md), then applies the version-matched document in
-[`overrides/`](./overrides/), without writing code yet. Its edge-case fixture is intentionally
-independent of the full snapshot and is validated by the unit suite.
+[IR contract](./ir/README.md), applies the version-matched document in
+[`overrides/`](./overrides/), then writes formatted wire-format types to
+`src/generated/wire.ts`. The generated declarations preserve Telegram's `snake_case` field
+names; the later public API layer will generate its `camelCase` types separately. Its edge-case
+fixture is intentionally independent of the full snapshot and is validated by the unit suite.
 
 ## Manual overrides
 
