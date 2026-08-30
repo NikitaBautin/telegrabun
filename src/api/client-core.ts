@@ -1,4 +1,4 @@
-import { serializeApiMethodParams } from './serializer.ts';
+import { deserializeApiMethodResult, serializeApiMethodParams } from './serializer.ts';
 import type { ApiMethodName, ApiMethodParams, ApiMethodResult } from '../generated/public.ts';
 import type { TelegramTransport } from '../transport/telegram-transport.ts';
 
@@ -25,7 +25,8 @@ export class ApiClientCore {
     params: ApiMethodParams<Method>,
   ): Promise<ApiMethodResult<Method>> {
     const wireParams = serializeApiMethodParams(method, params);
+    const wireResult = await this.#transport.call(method, wireParams);
 
-    return (await this.#transport.call(method, wireParams)) as ApiMethodResult<Method>;
+    return deserializeApiMethodResult(method, wireResult);
   }
 }

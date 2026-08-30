@@ -64,3 +64,19 @@ test('ApiClientCore serializes public parameters before delegating to transport'
     },
   ]);
 });
+
+test('ApiClientCore deserializes transport results to the public API shape', async () => {
+  const transport: TelegramTransport = {
+    async call() {
+      return { first_name: 'Ada', id: 42, is_bot: true };
+    },
+  };
+
+  const core = new ApiClientCore(transport);
+
+  expect(core.call('getMe', {})).resolves.toEqual({
+    firstName: 'Ada',
+    id: 42,
+    isBot: true,
+  });
+});
