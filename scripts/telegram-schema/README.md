@@ -27,11 +27,13 @@ the URL, retrieval date, announcement date, size, and checksum in the same chang
 [IR contract](./ir/README.md), applies the version-matched document in
 [`overrides/`](./overrides/), then writes formatted wire-format types to `src/generated/wire.ts`,
 public declarations to `src/generated/public.ts`, and serializer metadata to
-`src/generated/metadata.ts`. Wire declarations preserve Telegram's `snake_case` field names;
-public declarations use `camelCase` and include `ApiMethodMap` plus parameter/result helpers.
-Runtime metadata records verified snapshot provenance, public/wire field names, complete type
-trees, and potential `InputFile` attachments without performing work on import. Its edge-case
-fixture is intentionally independent of the full snapshot and is validated by the unit suite.
+`src/generated/metadata.ts`, and named API methods to `src/generated/client.ts`. Wire
+declarations preserve Telegram's `snake_case` field names; public declarations use `camelCase`
+and include `ApiMethodMap` plus parameter/result helpers. The generated `Api` facade delegates
+each named method to the handwritten core. Runtime metadata records verified snapshot provenance,
+public/wire field names, complete type trees, and potential `InputFile` attachments without
+performing work on import. Its edge-case fixture is intentionally independent of the full snapshot
+and is validated by the unit suite.
 
 `bun run check:generated` runs that same pipeline and fails if it changes any checked-in file
 under `src/generated/`. CI runs this command before the full quality gate.

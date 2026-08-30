@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 
 import {
+  generateTelegramApiClient,
   generateTelegramPublicTypes,
   generateTelegramRuntimeMetadata,
   generateTelegramWireTypes,
@@ -53,12 +54,14 @@ export async function generateTelegramSchema(
     join(outputDirectory, 'wire.ts'),
     join(outputDirectory, 'public.ts'),
     join(outputDirectory, 'metadata.ts'),
+    join(outputDirectory, 'client.ts'),
   ] as const;
 
   await Promise.all([
     Bun.write(generatedPaths[0], generateTelegramWireTypes(result.ir)),
     Bun.write(generatedPaths[1], generateTelegramPublicTypes(result.ir)),
     Bun.write(generatedPaths[2], generateTelegramRuntimeMetadata(result.ir, snapshotMetadata)),
+    Bun.write(generatedPaths[3], generateTelegramApiClient(result.ir)),
   ]);
   await formatGeneratedTelegramSchema(generatedPaths);
 

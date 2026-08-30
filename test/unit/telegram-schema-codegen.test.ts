@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import {
+  generateTelegramApiClient,
   generateTelegramPublicTypes,
   generateTelegramRuntimeMetadata,
   generateTelegramWireTypes,
@@ -65,6 +66,20 @@ test('public type generator uses camelCase fields and emits a complete method ma
   );
 });
 
+test('API client generator emits named methods with ergonomic parameter signatures', async () => {
+  const ir = parseTelegramSchemaIr(await Bun.file(fixturePath).json());
+  const generatedClient = generateTelegramApiClient(ir);
+
+  expect(generatedClient).toContain("import { ApiClientCore } from '../api/client-core.ts';");
+  expect(generatedClient).toContain('export class Api {');
+  expect(generatedClient).toContain('getMe(): Promise<Public.GetMeResult> {');
+  expect(generatedClient).toContain("return this.#core.call('getMe', {});");
+  expect(generatedClient).toContain(
+    'sendMessage(params: Public.SendMessageParams): Promise<Public.SendMessageResult> {',
+  );
+  expect(generatedClient).toContain("return this.#core.call('sendMessage', params);");
+});
+
 test('runtime metadata generator preserves snapshot provenance and serializer data', async () => {
   const ir = parseTelegramSchemaIr(await Bun.file(fixturePath).json());
   const metadata = await verifyTelegramSchemaSnapshot();
@@ -111,6 +126,7 @@ test('the checked-in generated wire types are exactly reproducible from the patc
   const generatedPath = join(import.meta.dir, '../../src/generated/wire.ts');
   const generatedPublicPath = join(import.meta.dir, '../../src/generated/public.ts');
   const generatedMetadataPath = join(import.meta.dir, '../../src/generated/metadata.ts');
+  const generatedClientPath = join(import.meta.dir, '../../src/generated/client.ts');
   const snapshotMetadata = await verifyTelegramSchemaSnapshot();
 
   expect(await Bun.file(generatedPath).text()).toBe(
@@ -121,6 +137,9 @@ test('the checked-in generated wire types are exactly reproducible from the patc
   );
   expect(await Bun.file(generatedMetadataPath).text()).toBe(
     await formatGeneratedWireTypes(generateTelegramRuntimeMetadata(patchedIr, snapshotMetadata)),
+  );
+  expect(await Bun.file(generatedClientPath).text()).toBe(
+    await formatGeneratedWireTypes(generateTelegramApiClient(patchedIr)),
   );
 
   const generatedTypes = await Bun.file(generatedPath).text();
@@ -140,6 +159,7 @@ test('the checked-in generated wire types are exactly reproducible from the patc
   }
 
   const generatedPublicTypes = await Bun.file(generatedPublicPath).text();
+  const generatedClient = await Bun.file(generatedClientPath).text();
   for (const object of patchedIr.objects) {
     expect(generatedPublicTypes).toContain(`export interface ${object.name} {`);
     for (const field of object.fields) {
@@ -154,6 +174,12 @@ test('the checked-in generated wire types are exactly reproducible from the patc
     expect(generatedPublicTypes).toContain(`readonly ${method.name}: {`);
     expect(generatedPublicTypes).toContain(`readonly params: ${typeName}Params;`);
     expect(generatedPublicTypes).toContain(`readonly result: ${typeName}Result;`);
+    expect(generatedClient).toMatch(new RegExp(`\\b${method.name}\\s*\\(`));
+    expect(generatedClient).toContain(
+      method.parameters.length === 0
+        ? `return this.#core.call('${method.name}', {});`
+        : `return this.#core.call('${method.name}', params);`,
+    );
   }
 });
 
@@ -170,7 +196,7 @@ test('the complete generator pipeline is idempotent', async () => {
 async function readGeneratedArtifacts(directory: string): Promise<Record<string, string>> {
   return Object.fromEntries(
     await Promise.all(
-      ['wire.ts', 'public.ts', 'metadata.ts'].map(async (name) => [
+      ['wire.ts', 'public.ts', 'metadata.ts', 'client.ts'].map(async (name) => [
         name,
         await Bun.file(join(directory, name)).text(),
       ]),

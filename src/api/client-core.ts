@@ -3,7 +3,7 @@ import type { ApiMethodName, ApiMethodParams, ApiMethodResult } from '../generat
 import type { TelegramTransport } from '../transport/telegram-transport.ts';
 
 /**
- * Internal contract for the handwritten layer shared by the generated typed API façade.
+ * Internal contract for the handwritten layer shared by the generated typed API facade.
  *
  * The core is intentionally limited to the public generated API shape: callers provide
  * camelCase parameters, while its transport receives an already serialized snake_case
