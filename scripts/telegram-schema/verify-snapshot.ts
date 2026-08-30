@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-interface SnapshotMetadata {
+export interface TelegramSchemaSnapshotMetadata {
   readonly formatVersion: number;
   readonly api: {
     readonly version: string;
@@ -20,8 +20,8 @@ interface SnapshotMetadata {
 const schemaDirectory = import.meta.dir;
 const metadataPath = join(schemaDirectory, 'snapshot-metadata.json');
 
-export async function verifyTelegramSchemaSnapshot(): Promise<SnapshotMetadata> {
-  const metadata = (await Bun.file(metadataPath).json()) as SnapshotMetadata;
+export async function verifyTelegramSchemaSnapshot(): Promise<TelegramSchemaSnapshotMetadata> {
+  const metadata = (await Bun.file(metadataPath).json()) as TelegramSchemaSnapshotMetadata;
   const snapshotPath = join(schemaDirectory, metadata.snapshot.path);
   const snapshot = Bun.file(snapshotPath);
 

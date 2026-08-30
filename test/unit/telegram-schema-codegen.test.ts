@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 
 import {
   generateTelegramPublicTypes,
+  generateTelegramRuntimeMetadata,
   generateTelegramWireTypes,
 } from '../../scripts/telegram-schema/codegen.ts';
 import { parseTelegramSchemaIr } from '../../scripts/telegram-schema/ir.ts';
@@ -13,6 +14,7 @@ import {
   loadTelegramSchemaOverrides,
 } from '../../scripts/telegram-schema/overrides.ts';
 import { parseCheckedInTelegramSchemaSnapshot } from '../../scripts/telegram-schema/parser.ts';
+import { verifyTelegramSchemaSnapshot } from '../../scripts/telegram-schema/verify-snapshot.ts';
 
 const fixturePath = join(
   import.meta.dir,
@@ -62,6 +64,38 @@ test('public type generator uses camelCase fields and emits a complete method ma
   );
 });
 
+test('runtime metadata generator preserves snapshot provenance and serializer data', async () => {
+  const ir = parseTelegramSchemaIr(await Bun.file(fixturePath).json());
+  const metadata = await verifyTelegramSchemaSnapshot();
+  const generatedMetadata = generateTelegramRuntimeMetadata(ir, metadata);
+
+  expect(generatedMetadata).toContain('export const telegramApiMetadata = {');
+  expect(generatedMetadata).toContain('version: "10.3",');
+  expect(generatedMetadata).toContain('url: "https://core.telegram.org/bots/api",');
+  expect(generatedMetadata).toContain('name: "messageId",');
+  expect(generatedMetadata).toContain('wireName: "message_id",');
+  expect(generatedMetadata).toContain('containsInputFile: true,');
+  expect(generatedMetadata).toContain("kind: 'input-file'");
+  expect(generatedMetadata).toContain('"InputMedia": {');
+  expect(generatedMetadata).toContain('discriminator: {');
+  expect(generatedMetadata).toContain('name: "status",');
+  expect(generatedMetadata).toMatch(
+    /"sendMediaGroup": \{[\s\S]*?name: "media",\n\s+wireName: "media",\n\s+required: true,\n\s+containsInputFile: true,/,
+  );
+});
+
+test('runtime metadata generation rejects a snapshot for another API version', async () => {
+  const ir = parseTelegramSchemaIr(await Bun.file(fixturePath).json());
+  const metadata = await verifyTelegramSchemaSnapshot();
+
+  expect(() =>
+    generateTelegramRuntimeMetadata(ir, {
+      ...metadata,
+      api: { ...metadata.api, version: '0.0' },
+    }),
+  ).toThrow('does not match IR API version');
+});
+
 test('the checked-in generated wire types are exactly reproducible from the patched IR', async () => {
   const ir = await parseCheckedInTelegramSchemaSnapshot();
   const overridesPath = join(
@@ -75,12 +109,17 @@ test('the checked-in generated wire types are exactly reproducible from the patc
   );
   const generatedPath = join(import.meta.dir, '../../src/generated/wire.ts');
   const generatedPublicPath = join(import.meta.dir, '../../src/generated/public.ts');
+  const generatedMetadataPath = join(import.meta.dir, '../../src/generated/metadata.ts');
+  const snapshotMetadata = await verifyTelegramSchemaSnapshot();
 
   expect(await Bun.file(generatedPath).text()).toBe(
     await formatGeneratedWireTypes(generateTelegramWireTypes(patchedIr)),
   );
   expect(await Bun.file(generatedPublicPath).text()).toBe(
     await formatGeneratedWireTypes(generateTelegramPublicTypes(patchedIr)),
+  );
+  expect(await Bun.file(generatedMetadataPath).text()).toBe(
+    await formatGeneratedWireTypes(generateTelegramRuntimeMetadata(patchedIr, snapshotMetadata)),
   );
 
   const generatedTypes = await Bun.file(generatedPath).text();

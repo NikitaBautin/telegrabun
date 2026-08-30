@@ -6,22 +6,42 @@
  */
 import { join } from 'node:path';
 
-import { generateTelegramPublicTypes, generateTelegramWireTypes } from './codegen.ts';
+import {
+  generateTelegramPublicTypes,
+  generateTelegramRuntimeMetadata,
+  generateTelegramWireTypes,
+} from './codegen.ts';
 import { applyTelegramSchemaOverrides, loadTelegramSchemaOverrides } from './overrides.ts';
 import { parseCheckedInTelegramSchemaSnapshot } from './parser.ts';
+import { verifyTelegramSchemaSnapshot } from './verify-snapshot.ts';
 
-const ir = await parseCheckedInTelegramSchemaSnapshot();
+const [ir, snapshotMetadata] = await Promise.all([
+  parseCheckedInTelegramSchemaSnapshot(),
+  verifyTelegramSchemaSnapshot(),
+]);
 const overridesPath = join(import.meta.dir, 'overrides', `telegram-bot-api-${ir.apiVersion}.json`);
 const result = applyTelegramSchemaOverrides(ir, await loadTelegramSchemaOverrides(overridesPath));
 const generatedWireTypesPath = join(import.meta.dir, '../../src/generated/wire.ts');
 const generatedPublicTypesPath = join(import.meta.dir, '../../src/generated/public.ts');
+const generatedRuntimeMetadataPath = join(import.meta.dir, '../../src/generated/metadata.ts');
 
 await Promise.all([
   Bun.write(generatedWireTypesPath, generateTelegramWireTypes(result.ir)),
   Bun.write(generatedPublicTypesPath, generateTelegramPublicTypes(result.ir)),
+  Bun.write(
+    generatedRuntimeMetadataPath,
+    generateTelegramRuntimeMetadata(result.ir, snapshotMetadata),
+  ),
 ]);
 const formatter = Bun.spawn(
-  ['bunx', 'oxfmt', '--write', generatedWireTypesPath, generatedPublicTypesPath],
+  [
+    'bunx',
+    'oxfmt',
+    '--write',
+    generatedWireTypesPath,
+    generatedPublicTypesPath,
+    generatedRuntimeMetadataPath,
+  ],
   {
     stderr: 'inherit',
     stdout: 'inherit',
