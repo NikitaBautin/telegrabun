@@ -3,7 +3,10 @@ import { mkdtemp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-import { generateTelegramWireTypes } from '../../scripts/telegram-schema/codegen.ts';
+import {
+  generateTelegramPublicTypes,
+  generateTelegramWireTypes,
+} from '../../scripts/telegram-schema/codegen.ts';
 import { parseTelegramSchemaIr } from '../../scripts/telegram-schema/ir.ts';
 import {
   applyTelegramSchemaOverrides,
@@ -35,6 +38,30 @@ test('wire type generator preserves snake_case fields and all IR type forms', as
   expect(generatedTypes).toContain('export type SetGameScoreResult = Message | true;');
 });
 
+test('public type generator uses camelCase fields and emits a complete method map', async () => {
+  const ir = parseTelegramSchemaIr(await Bun.file(fixturePath).json());
+  const generatedTypes = generateTelegramPublicTypes(ir);
+
+  expect(generatedTypes).toContain('readonly messageId: number;');
+  expect(generatedTypes).toContain('readonly chatId: number | string;');
+  expect(generatedTypes).toContain('readonly thumbnail?: InputFile;');
+  expect(generatedTypes).toContain('export type InputMedia = InputMediaPhoto | InputMediaVideo;');
+  expect(generatedTypes).toContain(
+    'export type ChatMember = ChatMemberOwner | ChatMemberAdministrator;',
+  );
+  expect(generatedTypes).toContain('export interface GetMeParams {\n}');
+  expect(generatedTypes).toContain('export type SendMediaGroupResult = ReadonlyArray<Message>;');
+  expect(generatedTypes).toContain('readonly sendMessage: {');
+  expect(generatedTypes).toContain('readonly params: SendMessageParams;');
+  expect(generatedTypes).toContain('readonly result: SendMessageResult;');
+  expect(generatedTypes).toContain(
+    "export type ApiMethodParams<Method extends ApiMethodName> = ApiMethodMap[Method]['params'];",
+  );
+  expect(generatedTypes).toContain(
+    "export type ApiMethodResult<Method extends ApiMethodName> = ApiMethodMap[Method]['result'];",
+  );
+});
+
 test('the checked-in generated wire types are exactly reproducible from the patched IR', async () => {
   const ir = await parseCheckedInTelegramSchemaSnapshot();
   const overridesPath = join(
@@ -47,9 +74,13 @@ test('the checked-in generated wire types are exactly reproducible from the patc
     await loadTelegramSchemaOverrides(overridesPath),
   );
   const generatedPath = join(import.meta.dir, '../../src/generated/wire.ts');
+  const generatedPublicPath = join(import.meta.dir, '../../src/generated/public.ts');
 
   expect(await Bun.file(generatedPath).text()).toBe(
     await formatGeneratedWireTypes(generateTelegramWireTypes(patchedIr)),
+  );
+  expect(await Bun.file(generatedPublicPath).text()).toBe(
+    await formatGeneratedWireTypes(generateTelegramPublicTypes(patchedIr)),
   );
 
   const generatedTypes = await Bun.file(generatedPath).text();
@@ -66,6 +97,23 @@ test('the checked-in generated wire types are exactly reproducible from the patc
     const typeName = `${method.name[0]!.toUpperCase()}${method.name.slice(1)}`;
     expect(generatedTypes).toContain(`export interface ${typeName}Params {`);
     expect(generatedTypes).toContain(`export type ${typeName}Result = `);
+  }
+
+  const generatedPublicTypes = await Bun.file(generatedPublicPath).text();
+  for (const object of patchedIr.objects) {
+    expect(generatedPublicTypes).toContain(`export interface ${object.name} {`);
+    for (const field of object.fields) {
+      const publicName = field.name.replace(/_([a-z0-9])/g, (_, character: string) =>
+        character.toUpperCase(),
+      );
+      expect(generatedPublicTypes).toContain(`readonly ${publicName}${field.required ? '' : '?'}:`);
+    }
+  }
+  for (const method of patchedIr.methods) {
+    const typeName = `${method.name[0]!.toUpperCase()}${method.name.slice(1)}`;
+    expect(generatedPublicTypes).toContain(`readonly ${method.name}: {`);
+    expect(generatedPublicTypes).toContain(`readonly params: ${typeName}Params;`);
+    expect(generatedPublicTypes).toContain(`readonly result: ${typeName}Result;`);
   }
 });
 
